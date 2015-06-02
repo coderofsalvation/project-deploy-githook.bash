@@ -1,10 +1,10 @@
 #!/bin/bash 
 #
-# KISS automatic node deployment for VPS (minimalist PAAS) node project bootstrapper 
+# KISS automatic project deployment for VPS (minimalist PAAS) project project bootstrapper 
 # in few lines of bash using only git & ssh
 #
 # Author: Leon van Kammen / Coder of Salvation
-# Website: https://github.com/coderofsalvation/nodejs-deploy-githook.bash
+# Website: https://github.com/coderofsalvation/projectjs-deploy-githook.bash
 # License: AGPL
 
 repositories_dir="/srv/repos"
@@ -13,13 +13,13 @@ port=""
 
 ## TEMPLATES #################################################################
 
-package_json='{
+pdg_json='{
   "name": "%s",
   "version": "0.0.1",
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "echo js-testfile goes here in package.json; exit 0"
+    "test": "echo put your test scripts pdg.json; exit 0"
   },
   "author": "",
   "license": "GPL3"
@@ -47,7 +47,11 @@ do
     
     trigger_hook .ndg/hooks/build
 
-    npm install 
+    [[ -f package.json  ]] && npm install 
+    [[ -f composer.json ]] && {
+      [[ ! -f .ndg/composer.phar ]] && curl -sS https://getcomposer.org/installer | php -- --install-dir=.ndg
+      php .ndg/composer.phar install
+    }
 
     trigger_hook .ndg/hooks/patch
 
@@ -68,13 +72,7 @@ hook_start='
   trap "echo application was killed | tee -a nohup.out ; exit 1" 1 2 3 4 5 SIGINT SIGTERM
   echo $$ > .pid
 
-  forever(){
-    echo "$(date) starting $(pwd) at port %s" | tee -a nohup.out
-    PORT=%s node server.js
-    sleep 2s && forever
-  }
-
-  forever
+  # you can (re)start/reload apache/lighttpd/mysql/nodejs here if needed
 '
 
 hook_stop='
@@ -85,7 +83,7 @@ exit 0 # else git deployment will halt
 '
 
 check(){
-  for app in pstree ps sed awk npm node; do which $app &>/dev/null || { echo "please install $app"; exit 1; }; done
+  for app in pstree ps sed awk; do which $app &>/dev/null || { echo "please install $app"; exit 1; }; done
   [[ ${#repositories_dir} == 0 ]] && { need_config; exit; }
   [[ ${#apps_dir}     == 0 ]] && { need_config; exit; }
   [[ ! -d "$repositories_dir" ]] && { echo "$repositories_dir does not exist" && need_config; exit 1; }
@@ -144,9 +142,8 @@ init_repo(){
   echo -e "$name\n$line\n\ndescription here" > $1/README.md
   touch $1/LICENSE
   init_ndg_hooks "$1"
-  printf "$package_json" "$name" > package.json
-  echo "var port = process.env.PORT;" > server.js
-  echo "node_modules" > .gitignore
+  printf "$pdg_json" "$name" > pdg.json
+  echo "*.swp" > .gitignore
 }
 
 
