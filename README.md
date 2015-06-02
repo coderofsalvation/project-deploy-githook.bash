@@ -22,7 +22,7 @@ Download pdg on liveserver:
 Configure pdg:
 
     liveserver$ pdg config repositories_dir /srv/webrepos    # location of gitrepos
-    liveserver$ pdg config apps_dir /srv/webapps             # where apps run
+    liveserver$ pdg config apps_dir /var/www                 # where webapps run
 
 Yay! now we can remotely bootstrap web-projects on the liveserver:
 

@@ -7,8 +7,8 @@
 # Website: https://github.com/coderofsalvation/projectjs-deploy-githook.bash
 # License: AGPL
 
-repositories_dir="/tmp/repos"
-apps_dir="/tmp/apps"
+repositories_dir=""
+apps_dir=""
 
 ## TEMPLATES #################################################################
 
@@ -124,6 +124,8 @@ init(){
     chmod 755 "$hookfile"
     init_repo "$apps_dir/$name"
     commit_repo
+    echo "$apps_dir/$name" > "$apps_dir/$name/DIR"
+    echo -e "app     dir:    $apps_dir/$name (also defined in 'DIR' file in root)"
     echo -e "clone  repo:    git clone $(whoami)@$(cat /etc/hostname):$repositories_dir/$name"
     echo -e "logview app:    ssh $(whoami)@$(cat /etc/hostname) tailf $apps_dir/$name/nohup.out"
     echo -e "deploy  app:    git push origin master"
