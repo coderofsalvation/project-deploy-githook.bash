@@ -1,22 +1,27 @@
 #!/bin/bash
 [[ ! -d /tmp/repos ]] && mkdir /tmp/repos
 [[ ! -d /tmp/apps  ]] && mkdir /tmp/apps
-./ndg config repositories_dir /tmp/repos
-./ndg config apps_dir /tmp/apps    
+./pdg config repositories_dir /tmp/repos
+./pdg config apps_dir /tmp/apps    
 rm -rf /tmp/repos/* /tmp/apps/*
-./ndg init testapp 2345
+./pdg init testapp
 
 cd /tmp; 
 rm -rf testapp; 
 git clone /tmp/repos/testapp 
 cd testapp 
-npm install qs --save
-git add package.json
+echo '{
+    "require": {
+        "monolog/monolog": "1.0.*"
+    }
+}' > composer.json
+git add composer.json 
 git commit -m "test" 
 git push origin master
 
 echo "sleep 15s before next commit" && sleep 15s
 
+npm init --yes
 npm install querystring --save
 git add package.json
 git commit -m "test" 

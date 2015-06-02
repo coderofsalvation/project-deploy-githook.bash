@@ -7,9 +7,8 @@
 # Website: https://github.com/coderofsalvation/projectjs-deploy-githook.bash
 # License: AGPL
 
-repositories_dir="/srv/repos"
-apps_dir="/srv/apps"
-port=""
+repositories_dir="/tmp/repos"
+apps_dir="/tmp/apps"
 
 ## TEMPLATES #################################################################
 
@@ -50,13 +49,11 @@ do
     [[ -f package.json  ]] && npm install 
     [[ -f composer.json ]] && {
       [[ ! -f .ndg/composer.phar ]] && curl -sS https://getcomposer.org/installer | php -- --install-dir=.ndg
-      php .ndg/composer.phar install
+      php .ndg/composer.phar install;
     }
 
     trigger_hook .ndg/hooks/patch
 
-    npm test
-    
     trigger_hook .ndg/hooks/test
 
     nohup .ndg/hooks/start 1>> nohup.out 2>&1 & 
@@ -117,10 +114,10 @@ usage(){
   grep -B1 "(){" $0 | grep "^#" | while read line; do echo "usage: ndg ${line//# /}"; done; exit; 
 }
 
-# init <id> <port> 
+# init <id>
 init(){
-  [[ ! -n $2 ]] && { usage; exit; }
-  set -u; name="$1"; port="$2"; hookfile=$name/hooks/post-receive 
+  [[ ! -n $1 ]] && { usage; exit; }
+  set -u; name="$1"; hookfile=$name/hooks/post-receive 
   {
     cd "$repositories_dir" && git init --bare "$name"
     print_header > "$hookfile"
@@ -161,8 +158,8 @@ init_ndg_hooks(){
   for file in build patch test start stop; do 
     echo -e "#!/bin/bash\n# this hook gets executed during $file-stage of deployment" > $1/.ndg/hooks/$file; 
   done 
-  printf "$hook_start" "$port" "$port" >> $1/.ndg/hooks/start
-  printf "$hook_stop"  "$port"   >> $1/.ndg/hooks/stop
+  printf "$hook_start" >> $1/.ndg/hooks/start
+  printf "$hook_stop"  >> $1/.ndg/hooks/stop
   chmod 755 $1/.ndg/hooks/* 
 }
 
