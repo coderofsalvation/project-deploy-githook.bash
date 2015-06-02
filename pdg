@@ -39,24 +39,23 @@ do
 
     cd "$projectdir" || { echo "$projectdir doesnt exist :("; exit 1; }
     
-    trigger_hook .ndg/hooks/stop
+    trigger_hook .pdg/hooks/stop
 
     git reset --hard	    
     git pull origin master
     
-    trigger_hook .ndg/hooks/build
+    trigger_hook .pdg/hooks/build
 
     [[ -f package.json  ]] && npm install 
     [[ -f composer.json ]] && {
-      [[ ! -f .ndg/composer.phar ]] && curl -sS https://getcomposer.org/installer | php -- --install-dir=.ndg
-      php .ndg/composer.phar install;
+      [[ ! -f .pdg/composer.phar ]] && curl -sS https://getcomposer.org/installer | php -- --install-dir=.pdg
+      php .pdg/composer.phar update;
     }
+    trigger_hook .pdg/hooks/patch
 
-    trigger_hook .ndg/hooks/patch
+    trigger_hook .pdg/hooks/test
 
-    trigger_hook .ndg/hooks/test
-
-    nohup .ndg/hooks/start 1>> nohup.out 2>&1 & 
+    nohup .pdg/hooks/start 1>> nohup.out 2>&1 & 
 
   else 
     echo "no actions for branch $branch"
@@ -111,7 +110,7 @@ config(){
 }
 
 usage(){
-  grep -B1 "(){" $0 | grep "^#" | while read line; do echo "usage: ndg ${line//# /}"; done; exit; 
+  grep -B1 "(){" $0 | grep "^#" | while read line; do echo "usage: pdg ${line//# /}"; done; exit; 
 }
 
 # init <id>
@@ -138,29 +137,29 @@ init_repo(){
   cd "$apps_dir/$name" 
   echo -e "$name\n$line\n\ndescription here" > $1/README.md
   touch $1/LICENSE
-  init_ndg_hooks "$1"
+  init_pdg_hooks "$1"
   printf "$pdg_json" "$name" > pdg.json
   echo "*.swp" > .gitignore
 }
 
 
 commit_repo(){
-   echo "--- committing README.md, LICENSE and ndg hooks"
+   echo "--- committing README.md, LICENSE and pdg hooks"
    git add . 
    git commit -m "1st commit"
    echo "--- pushing to origin"
    git push origin master
 }
 
-init_ndg_hooks(){
-  echo "--- initing .ndg/hooks/"
-  [[ ! -d $1/.ndg/hooks ]] && mkdir -p $1/.ndg/hooks 
+init_pdg_hooks(){
+  echo "--- initing .pdg/hooks/"
+  [[ ! -d $1/.pdg/hooks ]] && mkdir -p $1/.pdg/hooks 
   for file in build patch test start stop; do 
-    echo -e "#!/bin/bash\n# this hook gets executed during $file-stage of deployment" > $1/.ndg/hooks/$file; 
+    echo -e "#!/bin/bash\n# this hook gets executed during $file-stage of deployment" > $1/.pdg/hooks/$file; 
   done 
-  printf "$hook_start" >> $1/.ndg/hooks/start
-  printf "$hook_stop"  >> $1/.ndg/hooks/stop
-  chmod 755 $1/.ndg/hooks/* 
+  printf "$hook_start" >> $1/.pdg/hooks/start
+  printf "$hook_stop"  >> $1/.pdg/hooks/stop
+  chmod 755 $1/.pdg/hooks/* 
 }
 
 # app <list|start|stop|restart|status|delete> <appid>
@@ -179,16 +178,16 @@ app(){
 		[[ $ok == 1 ]] && not="not" || not=""
                 echo "app $2 is $not running (pid=$pid)"; 
                 ;;
-    stop)       .ndg/hooks/stop
+    stop)       .pdg/hooks/stop
                 ;;
     start)      kill -0 "$pid" &>/dev/null && { echo "app $2 is already running (pid=$pid)"; exit 0; }
 		echo starting
-                nohup .ndg/hooks/start 1>> nohup.out 2>&1 &
+                nohup .pdg/hooks/start 1>> nohup.out 2>&1 &
 		;;
-    restart)    .ndg/hooks/stop
-                nohup .ndg/hooks/start 1>> nohup.out 2>&1 &
+    restart)    .pdg/hooks/stop
+                nohup .pdg/hooks/start 1>> nohup.out 2>&1 &
                 ;;
-    delete)     .ndg/hooks/stop
+    delete)     .pdg/hooks/stop
 		echo "about to delete app in 5 seconds..press ctrl-c to abort"
 		echo "rm -rf $apps_dir/$2 $repositories_dir/$2"
 		sleep 5s
